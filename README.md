@@ -4,7 +4,7 @@ A modern Human Resource Management System built to simplify everyday HR operatio
 Managing employees shouldn't require spreadsheets, endless paperwork, or switching between multiple tools. OrbitX brings employee management, attendance, leave requests, and payroll into one place with a clean and easy-to-use interface.
 
 ---
-###PLEASE CHECK THE MASTER BRANCH 
+##PLEASE CHECK THE MASTER BRANCH 
 ## Why we built OrbitX
 
 During our research, we noticed that many small and medium-sized organizations still rely on manual processes for HR activities. Attendance is often maintained in registers, leave requests are handled over messages or emails, and employee information is scattered across different files.
