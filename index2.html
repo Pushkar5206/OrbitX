@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HRMS · Enterprise Workspace</title>
+<!-- Typography: Patrick Hand (as requested) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+<!-- Phosphor Icons for a clean, premium look -->
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+<style>
+  /* =========================================================
+     THEME & VARIABLES (Glassmorphism + Patrick Hand)
+     ========================================================= */
+  :root {
+    --primary: #c084fc; /* Vibrant purple for a friendly look */
+    --primary-hover: #a855f7;
+    --primary-light: rgba(192, 132, 252, 0.2);
+    
+    --bg-base: #f3f4f6;
+    --bg-blob-1: #e9d5ff;
+    --bg-blob-2: #bfdbfe;
+    
+    --glass-bg: rgba(255, 255, 255, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.8);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+    --glass-blur: blur(12px);
+    
+    --text-main: #1f2937;
+    --text-muted: #6b7280;
+    --border: rgba(0, 0, 0, 0.1);
+    
+    --success: #22c55e;
+    --warning: #facc15;
+    --danger: #ef4444;
+    --info: #3b82f6;
+    
+    --radius-sm: 8px;
+    --radius-md: 16px;
+    --radius-lg: 24px;
+    --transition: all 0.3s ease;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Patrick Hand', cursive;
+    background-color: var(--bg-base);
+    color: var(--text-main);
+    line-height: 1.6;
+    font-size: 1.1rem; /* Slightly larger for handwriting font */
+    overflow-x: hidden;
+    position: relative;
+    min-height: 100vh;
+  }
+
+  /* Animated Background Blobs */
+  .bg-blobs { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+  .blob { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.7; animation: float 20s infinite alternate ease-in-out; }
+  .blob-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: var(--bg-blob-1); }
+  .blob-2 { bottom: -20%; right: -10%; width: 60vw; height: 60vw; background: var(--bg-blob-2); animation-delay: -5s; }
+  @keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(5%, 10%) scale(1.1); } }
+
+  /* Utilities */
+  .hidden { display: none !important; }
+  .fade-in { animation: fadeIn 0.4s ease forwards; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Glass Components */
+  .glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: var(--radius-md);
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 0.5rem 1.25rem; font-size: 1.1rem; font-family: inherit;
+    border-radius: var(--radius-sm); cursor: pointer; transition: var(--transition);
+    border: none; outline: none; text-decoration: none;
+  }
+  .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 4px 10px var(--primary-light); }
+  .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); }
+  .btn-outline { background: transparent; border: 2px solid var(--border); color: var(--text-main); }
+  .btn-outline:hover { background: rgba(0,0,0,0.05); border-color: var(--text-muted); }
+  
+  .btn-icon-success { background: var(--success); color: white; border-radius: 50%; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border:none; cursor: pointer;}
+  .btn-icon-danger { background: var(--danger); color: white; border-radius: 50%; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border:none; cursor: pointer;}
+
+  /* Forms & Inputs */
+  .field { margin-bottom: 1.25rem; width: 100%; }
+  .field label { display: block; margin-bottom: 0.2rem; font-size: 1.1rem; color: var(--text-muted); }
+  .field-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+  
+  input, select, textarea {
+    width: 100%; padding: 0.6rem 1rem; font-family: inherit; font-size: 1.1rem;
+    border: 2px solid var(--border); border-radius: var(--radius-sm);
+    background: rgba(255,255,255,0.8); color: var(--text-main); transition: var(--transition);
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--primary); outline: none; }
+  input:disabled, textarea:disabled { opacity: 0.7; background: rgba(0,0,0,0.02); cursor: not-allowed; }
+
+  /* Auth Screens (Wireframe 1) */
+  .auth-view { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem; }
+  .auth-card { width: 100%; max-width: 480px; padding: 2.5rem; position: relative; }
+  .auth-header { text-align: center; margin-bottom: 2rem; }
+  .auth-header h2 { font-size: 2rem; color: var(--primary); background: var(--primary-light); display: inline-block; padding: 0.5rem 1.5rem; border-radius: var(--radius-lg); }
+  .upload-logo-btn { position: absolute; right: 2rem; top: 6rem; background: var(--info); color: white; border: none; border-radius: var(--radius-sm); padding: 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 5px; font-family: inherit;}
+
+  /* App Layout (Wireframe 2 - Top Navigation) */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 2rem; background: var(--glass-bg); backdrop-filter: var(--glass-blur);
+    border-bottom: 1px solid var(--glass-border); position: sticky; top: 0; z-index: 50;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 2rem; }
+  .company-logo { font-size: 1.5rem; font-weight: bold; color: var(--primary); border: 2px dashed var(--primary); padding: 0.2rem 1rem; border-radius: var(--radius-sm); }
+  
+  .nav-tabs { display: flex; gap: 0.5rem; }
+  .nav-tab { padding: 0.5rem 1rem; font-size: 1.2rem; cursor: pointer; border-radius: var(--radius-sm); transition: var(--transition); border: 1px solid transparent; }
+  .nav-tab:hover { background: rgba(0,0,0,0.05); }
+  .nav-tab.active { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+
+  .topbar-right { display: flex; align-items: center; gap: 1.5rem; position: relative; }
+  
+  /* Status Indicator */
+  .status-indicator { width: 18px; height: 18px; border-radius: 50%; background: var(--danger); transition: var(--transition); box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+  .status-indicator.checked-in { background: var(--success); box-shadow: 0 0 15px var(--success); }
+
+  /* Avatar & Dropdown */
+  .avatar-container { position: relative; cursor: pointer; }
+  .avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+  .dropdown-menu {
+    position: absolute; top: 120%; right: 0; background: white; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); box-shadow: var(--glass-shadow); min-width: 200px;
+    display: none; flex-direction: column; overflow: hidden; z-index: 100;
+  }
+  .dropdown-menu.show { display: flex; animation: fadeIn 0.2s ease; }
+  .dropdown-item { padding: 0.8rem 1.2rem; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s; display: flex; justify-content: space-between; align-items: center;}
+  .dropdown-item:hover { background: var(--bg-base); }
+  .dropdown-item:last-child { border-bottom: none; }
+
+  /* Main Content Area */
+  .main-content { padding: 2rem; max-width: 1400px; margin: 0 auto; }
+
+  /* Toolbar / Sub-nav */
+  .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+  .searchbar { padding: 0.5rem 1rem; border-radius: 20px; border: 2px solid var(--border); width: 100%; max-width: 300px; background: white; font-family: inherit;}
+  
+  /* Dashboard / Employees Grid (Wireframe 2) */
+  .emp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem; }
+  .emp-card {
+    background: white; border: 1px solid var(--border); border-radius: var(--radius-md);
+    padding: 1.5rem; text-align: center; position: relative; cursor: pointer;
+    transition: var(--transition); box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+  }
+  .emp-card:hover { transform: translateY(-5px); box-shadow: var(--glass-shadow); border-color: var(--primary); }
+  .card-status { position: absolute; top: 1rem; right: 1rem; width: 14px; height: 14px; border-radius: 50%; }
+  .status-green { background: var(--success); }
+  .status-yellow { background: var(--warning); }
+  .status-plane { background: transparent; color: var(--info); font-size: 1.2rem; top: 0.8rem; right: 0.8rem; }
+  .emp-card .avatar-large { width: 70px; height: 70px; border-radius: 50%; background: #e5e7eb; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #9ca3af; overflow: hidden;}
+  .emp-card .avatar-large img { width: 100%; height: 100%; object-fit: cover; }
+  .emp-name { font-size: 1.2rem; font-weight: bold; margin-bottom: 0.2rem; }
+  .emp-role { font-size: 1rem; color: var(--text-muted); }
+
+  /* Profile & Salary Page (Wireframe 3) */
+  .profile-layout { display: grid; grid-template-columns: 300px 1fr; gap: 2rem; }
+  @media (max-width: 768px) { .profile-layout { grid-template-columns: 1fr; } }
+  
+  .profile-sidebar { text-align: center; padding: 2rem; }
+  .profile-sidebar .avatar-xl { width: 120px; height: 120px; border-radius: 50%; background: var(--primary-light); margin: 0 auto 1rem; border: 3px solid var(--primary); display:flex; align-items:center; justify-content:center; font-size: 3rem;}
+  .profile-details { text-align: left; margin-top: 1.5rem; }
+  .profile-details p { margin-bottom: 0.5rem; font-size: 1.1rem; border-bottom: 1px dashed var(--border); padding-bottom: 0.2rem;}
+
+  .inner-tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 1.5rem; }
+  .inner-tab { padding: 0.5rem 1.5rem; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; font-size: 1.2rem;}
+  .inner-tab.active { border-color: var(--primary); color: var(--primary); }
+
+  /* Tables (Wireframe 4 & 5) */
+  .table-responsive { overflow-x: auto; background: white; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+  table.data { width: 100%; border-collapse: collapse; text-align: left; }
+  table.data th, table.data td { padding: 1rem; border-bottom: 1px solid var(--border); }
+  table.data th { background: rgba(0,0,0,0.02); font-weight: bold; color: var(--text-muted); font-size: 1.1rem; border-right: 1px solid var(--border); }
+  table.data td { border-right: 1px solid var(--border); }
+  table.data th:last-child, table.data td:last-child { border-right: none; }
+  
+  /* Summary Cards */
+  .summary-boxes { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+  .summary-box { flex: 1; padding: 1rem; background: white; border: 1px solid var(--border); border-radius: var(--radius-sm); text-align: center; }
+  .summary-box .value { font-size: 1.8rem; color: var(--primary); line-height: 1; margin-bottom: 0.5rem; }
+
+  /* Modals */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+  .modal-overlay.open { opacity: 1; pointer-events: auto; }
+  .modal-container { background: white; width: 100%; max-width: 500px; border-radius: var(--radius-md); padding: 2rem; transform: scale(0.95); transition: transform 0.3s; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.2); }
+  .modal-overlay.open .modal-container { transform: scale(1); }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+  
+  /* Calendar Mockup (Wireframe 6) */
+  .calendar-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem; }
+  .month-box { border: 1px solid var(--border); padding: 0.5rem; border-radius: var(--radius-sm); font-size: 0.8rem; background: white; text-align: center;}
+  .month-title { font-weight: bold; border-bottom: 1px solid var(--border); margin-bottom: 0.5rem; }
+  .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .day { padding: 2px; text-align: center; }
+  .day.active { background: var(--primary-light); border-radius: 50%; color: var(--primary); font-weight: bold;}
+
+  /* Toasts */
+  .toast-container { position: fixed; bottom: 2rem; right: 2rem; z-index: 300; display: flex; flex-direction: column; gap: 1rem; }
+  .toast { padding: 1rem 1.5rem; border-radius: var(--radius-sm); display: flex; align-items: center; gap: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); background: white; animation: slideIn 0.3s forwards; }
+  @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  /* Note Box */
+  .note-box { background: #fffbeb; border: 1px solid #fef3c7; padding: 1rem; border-radius: var(--radius-sm); font-size: 1rem; color: #92400e; margin-top: 1rem; }
+
+  /* Responsive Topbar */
+  @media (max-width: 768px) {
+    .nav-tabs { display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; flex-direction: column; border-bottom: 1px solid var(--border); box-shadow: var(--glass-shadow); padding: 1rem;}
+    .nav-tabs.mobile-open { display: flex; }
+    .mobile-menu-btn { display: block; font-size: 1.5rem; cursor: pointer; }
+    .topbar-left { gap: 1rem; }
+  }
+  @media (min-width: 769px) { .mobile-menu-btn { display: none; } }
+</style>
+</head>
+<body>
+
+  <!-- Ambient Background -->
+  <div class="bg-blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- =========================================================
+       VIEW 1: AUTHENTICATION (Sign In / Sign Up)
+       ========================================================= -->
+  <div id="view-auth" class="auth-view fade-in">
+    
+    <!-- Sign In (Wireframe 1 Left) -->
+    <div id="card-signin" class="glass-panel auth-card">
+      <div class="auth-header"><h2>App/Web Logo</h2></div>
+      
+      <form onsubmit="event.preventDefault(); login();">
+        <div class="field">
+          <label>Login Id/Email :-</label>
+          <input type="text" id="loginId" value="OIJODO20220001" required>
+        </div>
+        <div class="field">
+          <label>Password :-</label>
+          <input type="password" value="password" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; padding: 0.8rem;">SIGN IN</button>
+      </form>
+      
+      <div style="text-align:center; margin-top: 1.5rem;">
+        Don't have an Account? <a href="#" onclick="toggleAuth('signup')" style="color: var(--primary);">Sign Up</a>
+      </div>
+    </div>
+
+    <!-- Sign Up (Wireframe 1 Right) -->
+    <div id="card-signup" class="glass-panel auth-card hidden" style="max-width: 600px;">
+      <div class="auth-header"><h2>App/Web Logo</h2></div>
+      <button class="upload-logo-btn" onclick="document.getElementById('logoUpload').click()"><i class="ph ph-upload-simple"></i> Upload Logo</button>
+      <input type="file" id="logoUpload" class="hidden" accept="image/*">
+
+      <form onsubmit="event.preventDefault(); generateIDAndRegister();">
+        <div class="field-row">
+          <div class="field"><label>Company Name :-</label><input type="text" id="regCompany" value="Odoo India" required></div>
+          <div class="field"><label>Name :-</label><input type="text" id="regName" value="John Doe" required></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Email :-</label><input type="email" required></div>
+          <div class="field"><label>Phone :-</label><input type="tel" required></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Password :-</label><input type="password" required></div>
+          <div class="field"><label>Confirm Password :-</label><input type="password" required></div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; padding: 0.8rem;">Sign Up</button>
+      </form>
+
+      <div style="text-align:center; margin-top: 1.5rem;">
+        Already have an account? <a href="#" onclick="toggleAuth('signin')" style="color: var(--primary);">Sign In</a>
+      </div>
+
+      <div class="note-box">
+        <strong>Note for ID Generation:</strong><br>
+        Normal user cannot register. When HR creates user, ID is auto-generated: (First 2 letters of Company) + (First 2 letters of Name) + (Year) + (Serial).<br>
+        Example: Odoo India, John Doe -> <b>OIJODO20220001</b>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =========================================================
+       VIEW 2: MAIN APPLICATION SHELL (Topbar based on Wireframes)
+       ========================================================= -->
+  <div id="view-app" class="hidden fade-in">
+    
+    <header class="topbar">
+      <div class="topbar-left">
+        <i class="ph ph-list mobile-menu-btn" onclick="document.getElementById('navTabs').classList.toggle('mobile-menu-btn')"></i>
+        <div class="company-logo">Company Logo</div>
+        <nav class="nav-tabs" id="navTabs">
+          <div class="nav-tab active" onclick="switchPage('employees', this)">Employees</div>
+          <div class="nav-tab" onclick="switchPage('attendance', this)">Attendance</div>
+          <div class="nav-tab" onclick="switchPage('timeoff', this)">Time Off</div>
+        </nav>
+      </div>
+      
+      <div class="topbar-right">
+        <!-- Status Indicator (Red/Green Dot) -->
+        <div id="globalStatusDot" class="status-indicator" title="Check-in Status"></div>
+        
+        <!-- Avatar Dropdown -->
+        <div class="avatar-container" onclick="toggleDropdown()">
+          <div class="avatar">JD</div>
+          <div class="dropdown-menu" id="userDropdown">
+            <div class="dropdown-item" onclick="switchPage('profile', document.querySelector('.nav-tab'))"><i class="ph ph-user"></i> My Profile</div>
+            <div class="dropdown-item" onclick="toggleCheckIn()" id="checkInOutBtn">
+              <span>Check IN</span> <i class="ph ph-arrow-right"></i>
+            </div>
+            <div class="dropdown-item" onclick="logout()" style="color: var(--danger);"><i class="ph ph-sign-out"></i> Log Out</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="main-content">
+      
+      <!-- PAGE 1: EMPLOYEES (Dashboard - Wireframe 2) -->
+      <div id="page-employees" class="page-view fade-in">
+        <div class="toolbar">
+          <button class="btn btn-primary" onclick="switchPage('profile', null); document.getElementById('tab-salary').click();">NEW (Admin)</button>
+          <input type="text" class="searchbar" placeholder="Search..." onkeyup="filterCards(this.value)">
+        </div>
+        
+        <div class="emp-grid" id="empGrid">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+
+      <!-- PAGE 2: ATTENDANCE (Wireframe 4) -->
+      <div id="page-attendance" class="page-view hidden fade-in">
+        <div class="toolbar">
+          <h2 style="font-size: 1.5rem;">Attendance</h2>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <span>View As: </span>
+            <select class="searchbar" id="attendanceViewToggle" onchange="renderAttendance()" style="padding:0.2rem 1rem;">
+              <option value="admin">Admin/HR Officer</option>
+              <option value="employee">Employee</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="glass-panel" style="padding: 1.5rem;">
+          
+          <!-- Employee View Summaries -->
+          <div id="att-emp-summary" class="summary-boxes hidden">
+            <div class="summary-box"><div class="value">22</div><div>Count of days present</div></div>
+            <div class="summary-box"><div class="value">03</div><div>Leaves count</div></div>
+            <div class="summary-box"><div class="value">25</div><div>Total working days</div></div>
+          </div>
+
+          <!-- Controls -->
+          <div class="toolbar" style="background: rgba(0,0,0,0.02); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+            <div style="display:flex; gap: 0.5rem;">
+              <button class="btn btn-outline">&lt;-</button>
+              <button class="btn btn-outline">-&gt;</button>
+              <select class="btn btn-outline"><option>Oct</option></select>
+              <button class="btn btn-outline" id="attAdminControls">Day</button>
+            </div>
+            <input type="text" class="searchbar" placeholder="Searchbar" id="attSearchAdmin">
+          </div>
+
+          <div style="padding: 1rem 0; font-weight: bold; border-bottom: 2px solid var(--border);">22, October 2025</div>
+          
+          <div class="table-responsive">
+            <table class="data">
+              <thead id="attThead">
+                <!-- JS toggles Emp Name vs Date based on view -->
+              </thead>
+              <tbody id="attTbody">
+                <!-- JS Rendered -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE 3: TIME OFF (Wireframe 5 & 6) -->
+      <div id="page-timeoff" class="page-view hidden fade-in">
+        <div class="inner-tabs" style="margin-bottom: 1rem;">
+          <div class="inner-tab active">Time Off</div>
+          <div class="inner-tab">Allocation</div>
+        </div>
+        
+        <div class="toolbar">
+          <button class="btn btn-primary" onclick="openModal('reqModal')">NEW</button>
+          <input type="text" class="searchbar" placeholder="Searchbar">
+          <select class="searchbar" id="timeoffViewToggle" onchange="renderTimeOff()" style="max-width: 150px; padding:0.2rem 1rem;">
+            <option value="admin">Admin View</option>
+            <option value="employee">Employee View</option>
+          </select>
+        </div>
+
+        <div class="summary-boxes" style="margin-bottom: 2rem;">
+          <div class="summary-box" style="border-top: 4px solid var(--info);">
+            <div style="color: var(--info); font-size: 1.2rem; font-weight:bold;">Paid time Off</div>
+            <div class="value">24</div><div>Days Available</div>
+          </div>
+          <div class="summary-box" style="border-top: 4px solid var(--primary);">
+            <div style="color: var(--primary); font-size: 1.2rem; font-weight:bold;">Sick time off</div>
+            <div class="value">07</div><div>Days Available</div>
+          </div>
+        </div>
+
+        <!-- Admin Table View -->
+        <div id="to-admin-view" class="table-responsive">
+          <table class="data">
+            <thead>
+              <tr><th>Name</th><th>Start Date</th><th>End Date</th><th>Time off Type</th><th>Status (Approve/Reject)</th></tr>
+            </thead>
+            <tbody id="timeoffAdminTbody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Employee Calendar View Mockup -->
+        <div id="to-emp-view" class="hidden">
+          <h3 style="margin-bottom: 1rem;">Annual Calendar Overview</h3>
+          <div class="calendar-grid">
+            <!-- Generating a few mockup months for visual representation of wireframe -->
+            <div class="month-box"><div class="month-title">January 2026</div><div class="days-grid"><div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div> <div></div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div></div></div>
+            <div class="month-box"><div class="month-title">February 2026</div><div class="days-grid"><div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div> <div></div><div></div><div></div><div>1</div><div>2</div><div>3</div><div>4</div></div></div>
+            <div class="month-box"><div class="month-title">March 2026</div><div class="days-grid"><div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div> <div></div><div></div><div></div><div></div><div>1</div><div class="day active" style="color:red">2</div><div>3</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE 4: PROFILE & SALARY INFO (Wireframe 3) -->
+      <div id="page-profile" class="page-view hidden fade-in">
+        <div class="profile-layout">
+          <!-- Sidebar -->
+          <div class="glass-panel profile-sidebar">
+            <div class="avatar-xl">JD</div>
+            <h2 style="font-size: 1.8rem; margin-bottom: 0;">My Name</h2>
+            <div style="color: var(--primary); font-size: 1.1rem; margin-bottom: 1rem;">Company: Odoo India</div>
+            
+            <div class="profile-details">
+              <p><strong>Login ID:</strong> OIJODO20220001</p>
+              <p><strong>Email:</strong> admin@example.com</p>
+              <p><strong>Mobile:</strong> +91 9876543210</p>
+              <p><strong>Department:</strong> Management</p>
+              <p><strong>Manager:</strong> Self</p>
+              <p><strong>Location:</strong> Head Office</p>
+            </div>
+          </div>
+          
+          <!-- Content -->
+          <div class="glass-panel" style="padding: 2rem;">
+            <div class="inner-tabs">
+              <div class="inner-tab active" onclick="switchProfileTab('resume', this)">Resume</div>
+              <div class="inner-tab" onclick="switchProfileTab('private', this)">Private Info</div>
+              <div class="inner-tab" id="tab-salary" onclick="switchProfileTab('salary', this)">Salary Info</div>
+            </div>
+
+            <!-- Resume Tab -->
+            <div id="ptab-resume" class="ptab-content">
+              <div class="field-row" style="align-items: start;">
+                <div style="flex:1">
+                  <h3 style="border-bottom: 1px solid var(--border); margin-bottom: 1rem;"><i class="ph ph-pencil-simple"></i> About</h3>
+                  <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s...</p>
+                  
+                  <h3 style="border-bottom: 1px solid var(--border); margin-bottom: 1rem;"><i class="ph ph-heart"></i> What I love about my job</h3>
+                  <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Creating scalable systems and empowering teams to do their best work.</p>
+                  
+                  <h3 style="border-bottom: 1px solid var(--border); margin-bottom: 1rem;"><i class="ph ph-bicycle"></i> My interests and hobbies</h3>
+                  <p style="color: var(--text-muted);">Reading, Open-source coding, and cycling.</p>
+                </div>
+                
+                <div style="flex: 1;">
+                   <div style="border: 1px solid var(--border); padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1rem; background: white;">
+                     <h4 style="margin-bottom: 0.5rem;">Skills</h4>
+                     <p style="color: var(--text-muted);">+ Add Skills</p>
+                   </div>
+                   <div style="border: 1px solid var(--border); padding: 1rem; border-radius: var(--radius-sm); background: white;">
+                     <h4 style="margin-bottom: 0.5rem;">Certification</h4>
+                     <p style="color: var(--text-muted);">+ Add Skills</p>
+                   </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Private Info Tab -->
+            <div id="ptab-private" class="ptab-content hidden">
+               <p style="color: var(--text-muted);">Private employee information (Bank details, Emergency contacts) goes here.</p>
+            </div>
+
+            <!-- Salary Info Tab (Wireframe 3 Detailed) -->
+            <div id="ptab-salary" class="ptab-content hidden">
+              <div class="note-box" style="margin-bottom: 1.5rem; background: #f0fdf4; border-color: #bbf7d0; color: #166534;">
+                <strong>Important:</strong> Salary Info tab should only be visible to Admin. Salary component values auto-update when the wage amount changes. Total components should not exceed defined wage.
+              </div>
+
+              <div class="field-row">
+                <div class="field">
+                  <label>Month Wage (/ Month)</label>
+                  <input type="number" id="salMonth" value="50000" oninput="calculateSalary('month')">
+                </div>
+                <div class="field">
+                  <label>Yearly Wage (/ Yearly)</label>
+                  <input type="number" id="salYear" value="600000" oninput="calculateSalary('year')">
+                </div>
+                <div class="field">
+                  <label>No of working days in a week</label>
+                  <input type="number" value="5">
+                </div>
+              </div>
+
+              <div class="field-row" style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+                <!-- Allowances -->
+                <div style="flex: 1;">
+                  <h4 style="color: var(--primary); margin-bottom: 1rem;">Salary Components</h4>
+                  
+                  <div class="field" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="width: 60%;">
+                      <strong>Basic Salary</strong>
+                      <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.2;">50% of wage</p>
+                    </div>
+                    <input type="text" id="cBasic" value="25000.00" disabled style="width: 120px; text-align:right;">
+                  </div>
+
+                  <div class="field" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="width: 60%;">
+                      <strong>House Rent Allowance</strong>
+                      <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.2;">50% of the basic salary</p>
+                    </div>
+                    <input type="text" id="cHRA" value="12500.00" disabled style="width: 120px; text-align:right;">
+                  </div>
+                  
+                  <div class="field" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="width: 60%;">
+                      <strong>Standard Allowance</strong>
+                      <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.2;">Fixed amount</p>
+                    </div>
+                    <input type="text" id="cStd" value="4167.00" disabled style="width: 120px; text-align:right;">
+                  </div>
+
+                  <div class="field" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="width: 60%;">
+                      <strong>Performance Bonus</strong>
+                      <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.2;">8.33% of Basic</p>
+                    </div>
+                    <input type="text" id="cPerf" value="2082.50" disabled style="width: 120px; text-align:right;">
+                  </div>
+                </div>
+
+                <!-- Deductions -->
+                <div style="flex: 1;">
+                  <h4 style="color: var(--danger); margin-bottom: 1rem;">Deductions</h4>
+                  
+                  <div class="field" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="width: 60%;">
+                      <strong>Provident Fund (PF)</strong>
+                      <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.2;">12% of Basic</p>
+                    </div>
+                    <input type="text" id="cPF" value="3000.00" disabled style="width: 120px; text-align:right;">
+                  </div>
+
+                  <div class="field" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="width: 60%;">
+                      <strong>Tax Deduction</strong>
+                      <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.2;">Professional Tax</p>
+                    </div>
+                    <input type="text" id="cTax" value="200.00" disabled style="width: 120px; text-align:right;">
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+
+  <!-- =========================================================
+       MODALS
+       ========================================================= -->
+
+  <!-- Time Off Request Modal (Wireframe 6) -->
+  <div class="modal-overlay" id="reqModal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3>Time off Type Request</h3>
+        <button class="btn btn-outline" style="border:none; padding:0.2rem;" onclick="closeModal('reqModal')">X</button>
+      </div>
+      <div class="modal-body">
+        
+        <div style="display: flex; gap: 2rem;">
+          <!-- Form -->
+          <div style="flex: 2;">
+            <div class="field-row">
+              <div class="field"><label>Employee</label><input type="text" value="[Employee Name]" disabled></div>
+            </div>
+            <div class="field">
+              <label>Time off Type</label>
+              <select>
+                <option>Paid Time off</option>
+                <option>Sick Leave</option>
+                <option>Unpaid Leaves</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <div class="field"><label>Validity Period (From)</label><input type="date"></div>
+              <div class="field"><label>(To)</label><input type="date"></div>
+            </div>
+            <div class="field-row">
+               <div class="field"><label>Allocation (Days)</label><input type="number" value="1.00"></div>
+            </div>
+            <div class="field" style="display: flex; align-items: center; gap: 10px;">
+              <label style="margin:0;">Attachment:</label>
+              <button class="btn btn-primary" style="padding: 0.2rem 0.5rem;"><i class="ph ph-upload-simple"></i></button>
+              <span style="font-size: 0.9rem; color: var(--text-muted);">(For sick leave certificate)</span>
+            </div>
+          </div>
+          
+          <!-- Types Note -->
+          <div style="flex: 1;">
+            <div style="background: #fffbeb; border: 1px dashed #fbbf24; padding: 1rem; border-radius: var(--radius-sm); font-size: 1rem;">
+              <strong style="text-decoration: underline;">TimeOff Types:</strong><br>
+              - Paid Time off<br>
+              - Sick Leave<br>
+              - Unpaid Leaves
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+        <button class="btn btn-primary" onclick="closeModal('reqModal'); showToast('Request Submitted')">Submit</button>
+        <button class="btn btn-outline" onclick="closeModal('reqModal')">Discard</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =========================================================
+       JAVASCRIPT LOGIC
+       ========================================================= -->
+  <script>
+    // --- Mock Data ---
+    let isCheckedIn = false;
+    const employees = [
+      { name: 'John Doe', role: 'Management', status: 'green' }, // green = present
+      { name: 'Emily Chen', role: 'Design', status: 'yellow' },  // yellow = absent
+      { name: 'Marcus J', role: 'Engineering', status: 'plane' }, // plane = leave
+      { name: 'Sarah W', role: 'Marketing', status: 'green' },
+      { name: 'Michael T', role: 'Sales', status: 'yellow' },
+      { name: 'Anna B', role: 'HR', status: 'green' },
+    ];
+
+    const attendanceAdmin = [
+      { emp: 'John Doe', in: '10:00', out: '19:00', work: '09:00', extra: '01:00' },
+      { emp: 'Emily Chen', in: '--:--', out: '--:--', work: '--:--', extra: '--:--' },
+      { emp: 'Sarah W', in: '09:30', out: '18:30', work: '09:00', extra: '00:00' },
+    ];
+    const attendanceEmp = [
+      { date: '28/10/2025', in: '10:00', out: '19:00', work: '09:00', extra: '01:00' },
+      { date: '29/10/2025', in: '10:00', out: '19:00', work: '09:00', extra: '01:00' },
+    ];
+
+    const timeOffReqs = [
+      { name: 'Marcus J', start: '28/10/2025', end: '30/10/2025', type: 'Paid time Off' },
+      { name: 'Emily Chen', start: '01/11/2025', end: '02/11/2025', type: 'Sick time off' }
+    ];
+
+    // --- Authentication ---
+    function toggleAuth(type) {
+      document.getElementById('card-signin').classList.add('hidden');
+      document.getElementById('card-signup').classList.add('hidden');
+      document.getElementById(`card-${type}`).classList.remove('hidden');
+    }
+
+    function generateIDAndRegister() {
+      const company = document.getElementById('regCompany').value;
+      const name = document.getElementById('regName').value;
+      
+      // Generation Logic: OIJODO20220001
+      let compCode = company.replace(/\s/g, '').substring(0, 2).toUpperCase();
+      let nameParts = name.split(' ');
+      let nameCode = (nameParts[0].substring(0,2) + (nameParts.length > 1 ? nameParts[1].substring(0,2) : 'XX')).toUpperCase();
+      let year = new Date().getFullYear();
+      let serial = "0001";
+      
+      let generatedID = `${compCode}${nameCode}${year}${serial}`;
+      
+      alert(`Auto-Generated ID via System Logic: ${generatedID}\n\nPlease save this ID to login.`);
+      document.getElementById('loginId').value = generatedID;
+      toggleAuth('signin');
+    }
+
+    function login() {
+      document.getElementById('view-auth').classList.add('hidden');
+      document.getElementById('view-app').classList.remove('hidden');
+      renderDashboard();
+      renderAttendance();
+      renderTimeOff();
+      showToast('Logged in successfully!');
+    }
+
+    function logout() {
+      document.getElementById('view-app').classList.add('hidden');
+      document.getElementById('view-auth').classList.remove('hidden');
+      if(isCheckedIn) toggleCheckIn(); // Reset checkin
+      showToast('Logged out');
+    }
+
+    // --- Navigation ---
+    function switchPage(pageId, tabElement) {
+      // Manage active nav state
+      if(tabElement) {
+        document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+        tabElement.classList.add('active');
+        document.getElementById('navTabs').classList.remove('mobile-menu-btn'); // close mobile menu
+      }
+      
+      // Switch view
+      document.querySelectorAll('.page-view').forEach(el => el.classList.add('hidden'));
+      document.getElementById(`page-${pageId}`).classList.remove('hidden');
+    }
+
+    function switchProfileTab(tabId, element) {
+      document.querySelectorAll('.inner-tab').forEach(el => el.classList.remove('active'));
+      element.classList.add('active');
+      
+      document.querySelectorAll('.ptab-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById(`ptab-${tabId}`).classList.remove('hidden');
+    }
+
+    function toggleDropdown() {
+      document.getElementById('userDropdown').classList.toggle('show');
+    }
+    // Close dropdown on outside click
+    window.onclick = function(event) {
+      if (!event.target.closest('.avatar-container')) {
+        document.getElementById('userDropdown').classList.remove('show');
+      }
+    }
+
+    // --- Status Check In/Out (Wireframe 2 Dropdown interaction) ---
+    function toggleCheckIn() {
+      isCheckedIn = !isCheckedIn;
+      const dot = document.getElementById('globalStatusDot');
+      const btn = document.getElementById('checkInOutBtn');
+      
+      if(isCheckedIn) {
+        dot.classList.add('checked-in');
+        btn.innerHTML = `<span>Check Out</span> <i class="ph ph-arrow-left"></i>`;
+        showToast('Successfully Checked IN');
+      } else {
+        dot.classList.remove('checked-in');
+        btn.innerHTML = `<span>Check IN</span> <i class="ph ph-arrow-right"></i>`;
+        showToast('Successfully Checked OUT');
+      }
+    }
+
+    // --- Render Functions ---
+    function renderDashboard(filter = '') {
+      const container = document.getElementById('empGrid');
+      container.innerHTML = '';
+      
+      employees.forEach(emp => {
+        if(!emp.name.toLowerCase().includes(filter.toLowerCase())) return;
+
+        let iconHTML = '';
+        if(emp.status === 'plane') {
+          iconHTML = `<i class="ph ph-airplane-tilt card-status status-plane"></i>`;
+        } else {
+          iconHTML = `<div class="card-status status-${emp.status}"></div>`;
+        }
+
+        const initials = emp.name.split(' ').map(n=>n[0]).join('');
+
+        container.innerHTML += `
+          <div class="emp-card" onclick="switchPage('profile', null)">
+            ${iconHTML}
+            <div class="avatar-large">${initials}</div>
+            <div class="emp-name">${emp.name}</div>
+            <div class="emp-role">${emp.role}</div>
+          </div>
+        `;
+      });
+    }
+
+    function filterCards(val) { renderDashboard(val); }
+
+    function renderAttendance() {
+      const view = document.getElementById('attendanceViewToggle').value;
+      const thead = document.getElementById('attThead');
+      const tbody = document.getElementById('attTbody');
+      
+      if(view === 'admin') {
+        document.getElementById('att-emp-summary').classList.add('hidden');
+        document.getElementById('attSearchAdmin').classList.remove('hidden');
+        document.getElementById('attAdminControls').classList.remove('hidden');
+        
+        thead.innerHTML = `<tr><th>Emp</th><th>Check In</th><th>Check Out</th><th>Work Hours</th><th>Extra hours</th></tr>`;
+        tbody.innerHTML = attendanceAdmin.map(a => `
+          <tr><td>${a.emp}</td><td>${a.in}</td><td>${a.out}</td><td>${a.work}</td><td>${a.extra}</td></tr>
+        `).join('');
+      } else {
+        document.getElementById('att-emp-summary').classList.remove('hidden');
+        document.getElementById('attSearchAdmin').classList.add('hidden');
+        document.getElementById('attAdminControls').classList.add('hidden');
+
+        thead.innerHTML = `<tr><th>Date</th><th>Check In</th><th>Check Out</th><th>Work Hours</th><th>Extra hours</th></tr>`;
+        tbody.innerHTML = attendanceEmp.map(a => `
+          <tr><td>${a.date}</td><td>${a.in}</td><td>${a.out}</td><td>${a.work}</td><td>${a.extra}</td></tr>
+        `).join('');
+      }
+    }
+
+    function renderTimeOff() {
+      const view = document.getElementById('timeoffViewToggle').value;
+      if(view === 'admin') {
+        document.getElementById('to-admin-view').classList.remove('hidden');
+        document.getElementById('to-emp-view').classList.add('hidden');
+        
+        const tbody = document.getElementById('timeoffAdminTbody');
+        tbody.innerHTML = timeOffReqs.map((req, i) => `
+          <tr id="reqRow${i}">
+            <td>${req.name}</td><td>${req.start}</td><td>${req.end}</td>
+            <td style="color: ${req.type.includes('Paid') ? 'var(--info)' : 'var(--primary)'}; font-weight:bold;">${req.type}</td>
+            <td style="display:flex; gap: 10px;">
+              <button class="btn-icon-danger" onclick="document.getElementById('reqRow${i}').remove(); showToast('Rejected')"><i class="ph ph-x"></i></button>
+              <button class="btn-icon-success" onclick="document.getElementById('reqRow${i}').remove(); showToast('Approved')"><i class="ph ph-check"></i></button>
+            </td>
+          </tr>
+        `).join('');
+      } else {
+        document.getElementById('to-admin-view').classList.add('hidden');
+        document.getElementById('to-emp-view').classList.remove('hidden');
+      }
+    }
+
+    // --- Salary Calculation (Wireframe 3 Auto-calc logic) ---
+    function calculateSalary(source) {
+      let monthWage = 0;
+      let yearWage = 0;
+
+      if (source === 'month') {
+        monthWage = parseFloat(document.getElementById('salMonth').value) || 0;
+        yearWage = monthWage * 12;
+        document.getElementById('salYear').value = yearWage.toFixed(2);
+      } else {
+        yearWage = parseFloat(document.getElementById('salYear').value) || 0;
+        monthWage = yearWage / 12;
+        document.getElementById('salMonth').value = monthWage.toFixed(2);
+      }
+
+      // Business Logic as per wireframe text
+      let basic = monthWage * 0.50;
+      let hra = basic * 0.50;
+      let stdAllow = 4167.00; // Fixed
+      let perfBonus = basic * 0.0833;
+      let pf = basic * 0.12;
+
+      document.getElementById('cBasic').value = basic.toFixed(2);
+      document.getElementById('cHRA').value = hra.toFixed(2);
+      document.getElementById('cStd').value = stdAllow.toFixed(2);
+      document.getElementById('cPerf').value = perfBonus.toFixed(2);
+      document.getElementById('cPF').value = pf.toFixed(2);
+    }
+
+    // --- Utilities ---
+    function openModal(id) {
+      const modal = document.getElementById(id);
+      modal.style.display = 'flex';
+      setTimeout(() => modal.classList.add('open'), 10);
+    }
+    function closeModal(id) {
+      const modal = document.getElementById(id);
+      modal.classList.remove('open');
+      setTimeout(() => modal.style.display = 'none', 300);
+    }
+
+    function showToast(message) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast`;
+      toast.innerHTML = `<i class="ph ph-check-circle" style="font-size:1.5rem; color:var(--success);"></i> <span>${message}</span>`;
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.animation = 'slideIn 0.3s reverse forwards';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
