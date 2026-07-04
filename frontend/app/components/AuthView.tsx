@@ -52,7 +52,7 @@ export default function AuthView() {
         return;
       }
 
-      setLoginId(regEmail);
+      setLoginId(response.loginId);
       setView('signin');
       toast.success(`Account created. Login ID: ${response.loginId}`);
     } catch (error) {

@@ -169,21 +169,30 @@ app.post('/api/auth/signin', async (req, res) => {
         let resolvedEmail = email;
 
         if (!resolvedEmail && loginId) {
-            const { data: employeeByLoginId, error: lookupError } = await dbClient
-                .from('employees')
-                .select('email')
-                .eq('login_id', loginId)
-                .maybeSingle();
+            const identifier = String(loginId).trim();
+            const lookupQuery = identifier.includes('@')
+                ? dbClient.from('employees').select('email').eq('email', identifier).maybeSingle()
+                : dbClient.from('employees').select('email').or(`login_id.eq.${identifier},email.eq.${identifier}`).maybeSingle();
+
+            const { data: employeeByLoginId, error: lookupError } = await lookupQuery;
 
             if (lookupError) {
                 return sendError(res, 500, lookupError.message);
             }
 
             if (!employeeByLoginId?.email) {
-                return sendError(res, 404, 'No employee found for the provided loginId');
+                return sendError(res, 404, 'No employee found for the provided loginId or email');
             }
 
             resolvedEmail = employeeByLoginId.email;
+        }
+
+        if (!resolvedEmail && email) {
+            resolvedEmail = String(email).trim();
+        }
+
+        if (!resolvedEmail) {
+            return sendError(res, 400, 'Unable to resolve a login email');
         }
 
         const { data: signInData, error: signInError } = await authClient.auth.signInWithPassword({
@@ -204,7 +213,27 @@ app.post('/api/auth/signin', async (req, res) => {
         const employee = await getEmployeeByUserId(userId);
 
         if (!employee) {
-            return sendError(res, 404, 'Employee profile not found');
+            const { data: fallbackEmployee, error: fallbackError } = await dbClient
+                .from('employees')
+                .select('*')
+                .or(`user_id.eq.${userId},email.eq.${resolvedEmail}`)
+                .maybeSingle();
+
+            if (fallbackError) {
+                return sendError(res, 500, fallbackError.message);
+            }
+
+            if (!fallbackEmployee) {
+                return sendError(res, 404, 'Employee profile not found');
+            }
+
+            return res.json({
+                accessToken: signInData.session?.access_token,
+                refreshToken: signInData.session?.refresh_token,
+                expiresAt: signInData.session?.expires_at,
+                employee: fallbackEmployee,
+                user: signInData.user,
+            });
         }
 
         return res.json({
